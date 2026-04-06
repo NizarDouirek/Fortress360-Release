@@ -1,9 +1,9 @@
-volumes:
+﻿volumes:
     postgres_data:
         external: false
 services:
     agentmanager:
-        image: fortress/agent-manager:v11.2.3
+        image: ghcr.io/nizardouirek/fortress-agentmanager:v11.2.3
         volumes:
             - /utmstack/cert:/cert
             - /utmstack/updates:/updates
@@ -36,7 +36,7 @@ services:
                 limits:
                     memory: 1024M
     backend:
-        image: fortress/backend:v11.2.3
+        image: ghcr.io/nizardouirek/fortress-backend:v11.2.3
         volumes:
             - /utmstack/datasources:/etc/utmstack
             - /utmstack/updates:/updates
@@ -73,7 +73,7 @@ services:
                 reservations:
                     memory: 700M
     event-processor-manager:
-        image: fortress/eventprocessor:v11.2.3
+        image: ghcr.io/nizardouirek/fortress-eventprocessor:v11.2.3
         volumes:
             - /utmstack/events-engine-workdir/pipeline:/workdir/pipeline
             - /utmstack/events-engine-workdir/rules:/workdir/rules/utmstack
@@ -117,7 +117,7 @@ services:
                 reservations:
                     memory: 4096M
     event-processor-worker:
-        image: fortress/eventprocessor:v11.2.3
+        image: ghcr.io/nizardouirek/fortress-eventprocessor:v11.2.3
         volumes:
             - /utmstack/events-engine-workdir/pipeline:/workdir/pipeline
             - /utmstack/events-engine-workdir/logs:/workdir/logs
@@ -148,7 +148,7 @@ services:
                 reservations:
                     memory: 4096M
     frontend:
-        image: fortress/frontend:v11.2.3
+        image: ghcr.io/nizardouirek/fortress-frontend:v11.2.3
         volumes:
             - /utmstack/cert:/etc/nginx/cert
             - /utmstack/front-end/nginx:/etc/nginx/conf.d
@@ -169,7 +169,7 @@ services:
                 limits:
                     memory: 1024M
     node1:
-        image: fortress/opensearch:latest
+        image: ghcr.io/nizardouirek/fortress-opensearch:v1.0
         volumes:
             - /utmstack/opensearch/data:/usr/share/opensearch/data
             - /utmstack/opensearch/backups:/usr/share/opensearch/backups
@@ -205,7 +205,7 @@ services:
                 reservations:
                     memory: 5271M
     postgres:
-        image: fortress/postgres:latest
+        image: ghcr.io/nizardouirek/fortress-postgres:v1.0
         volumes:
             - postgres_data:/var/lib/postgresql/data
         ports:
@@ -228,7 +228,7 @@ services:
                     memory: 500M
         command: [postgres, -c, shared_buffers=256MB, -c, max_connections=1000]
     user-auditor:
-        image: fortress/user-auditor:v11.2.3
+        image: ghcr.io/nizardouirek/fortress-userauditor:v11.2.3
         environment:
             - SERVER_NAME=fortress360
             - INTERNAL_KEY=eFTcoZwIb35ZshIezCWtUMvSs4JEaLBv
@@ -254,7 +254,7 @@ services:
                 limits:
                     memory: 1024M
     web-pdf:
-        image: fortress/web-pdf:v11.2.3
+        image: ghcr.io/nizardouirek/fortress-pdf:v11.2.3
         volumes:
             - /utmstack/tmpfs:/dev/shm
         depends_on:
