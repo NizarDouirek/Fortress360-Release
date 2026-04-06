@@ -1,0 +1,273 @@
+volumes:
+    postgres_data:
+        external: false
+services:
+    agentmanager:
+        image: fortress/agent-manager:v11.2.3
+        volumes:
+            - /utmstack/cert:/cert
+            - /utmstack/updates:/updates
+        ports:
+            - 9000:9000
+            - 9001:9001
+        environment:
+            - DB_PATH=/data/utmstack.db
+            - INTERNAL_KEY=eFTcoZwIb35ZshIezCWtUMvSs4JEaLBv
+            - ENCRYPTION_KEY=eFTcoZwIb35ZshIezCWtUMvSs4JEaLBv
+            - UTM_HOST=http://backend:8080
+            - DB_USER=postgres
+            - DB_PASSWORD=gw3hUI4jJJEdOub1
+            - DB_HOST=postgres
+            - DB_PORT=5432
+            - DB_NAME=agentmanager
+            - PANEL_SERV_NAME=http://backend:8080
+        depends_on:
+            - postgres
+            - node1
+        logging:
+            driver: json-file
+            options:
+                max-size: 50m
+        deploy:
+            placement:
+                constraints:
+                    - node.role == manager
+            resources:
+                limits:
+                    memory: 1024M
+    backend:
+        image: fortress/backend:v11.2.3
+        volumes:
+            - /utmstack/datasources:/etc/utmstack
+            - /utmstack/updates:/updates
+        environment:
+            - SERVER_NAME=fortress360
+            - DB_USER=postgres
+            - DB_PASS=gw3hUI4jJJEdOub1
+            - DB_HOST=postgres
+            - DB_PORT=5432
+            - DB_NAME=utmstack
+            - ELASTICSEARCH_HOST=node1
+            - ELASTICSEARCH_PORT=9200
+            - INTERNAL_KEY=eFTcoZwIb35ZshIezCWtUMvSs4JEaLBv
+            - ENCRYPTION_KEY=eFTcoZwIb35ZshIezCWtUMvSs4JEaLBv
+            - GRPC_AGENT_MANAGER_HOST=agentmanager
+            - GRPC_AGENT_MANAGER_PORT=9000
+            - EVENT_PROCESSOR_HOST=event-processor-manager
+            - EVENT_PROCESSOR_PORT=9002
+        depends_on:
+            - postgres
+            - node1
+            - agentmanager
+        logging:
+            driver: json-file
+            options:
+                max-size: 50m
+        deploy:
+            placement:
+                constraints:
+                    - node.role == manager
+            resources:
+                limits:
+                    memory: 2048M
+                reservations:
+                    memory: 700M
+    event-processor-manager:
+        image: fortress/eventprocessor:v11.2.3
+        volumes:
+            - /utmstack/events-engine-workdir/pipeline:/workdir/pipeline
+            - /utmstack/events-engine-workdir/rules:/workdir/rules/utmstack
+            - /utmstack/events-engine-workdir/logs:/workdir/logs
+            - /utmstack/cert:/cert
+            - /utmstack/updates:/updates
+        ports:
+            - 8000:8000
+        environment:
+            - WORK_DIR=/workdir
+            - LOG_LEVEL=200
+            - GIN_MODE=release
+            - MODE=manager
+            - NODE_NAME=manager
+            - INTERNAL_KEY=eFTcoZwIb35ZshIezCWtUMvSs4JEaLBv
+            - ENCRYPTION_KEY=eFTcoZwIb35ZshIezCWtUMvSs4JEaLBv
+            - BACKEND_URL=http://backend:8080
+            - ENV=prod
+            - OPENSEARCH_HOST=node1
+            - OPENSEARCH_PORT=9200
+            - DB_HOST=postgres
+            - DB_PORT=5432
+            - DB_USER=postgres
+            - DB_PASS=gw3hUI4jJJEdOub1
+            - DB_NAME=utmstack
+        depends_on:
+            - postgres
+            - node1
+            - backend
+        logging:
+            driver: json-file
+            options:
+                max-size: 50m
+        deploy:
+            placement:
+                constraints:
+                    - node.role == manager
+            resources:
+                limits:
+                    memory: 10290M
+                reservations:
+                    memory: 4096M
+    event-processor-worker:
+        image: fortress/eventprocessor:v11.2.3
+        volumes:
+            - /utmstack/events-engine-workdir/pipeline:/workdir/pipeline
+            - /utmstack/events-engine-workdir/logs:/workdir/logs
+            - /utmstack/events-engine-workdir/rules:/workdir/rules/utmstack
+            - /utmstack/cert:/cert
+            - /utmstack/updates:/updates
+        ports:
+            - 50051:50051
+            - 8080:8080
+        environment:
+            - WORK_DIR=/workdir
+            - LOG_LEVEL=200
+            - GIN_MODE=release
+            - MODE=worker
+        depends_on:
+            - postgres
+            - node1
+            - backend
+        logging:
+            driver: json-file
+            options:
+                max-size: 50m
+        deploy:
+            mode: global
+            resources:
+                limits:
+                    memory: 10290M
+                reservations:
+                    memory: 4096M
+    frontend:
+        image: fortress/frontend:v11.2.3
+        volumes:
+            - /utmstack/cert:/etc/nginx/cert
+            - /utmstack/front-end/nginx:/etc/nginx/conf.d
+        ports:
+            - 10001:80
+        depends_on:
+            - backend
+            - filebrowser
+        logging:
+            driver: json-file
+            options:
+                max-size: 50m
+        deploy:
+            placement:
+                constraints:
+                    - node.role == manager
+            resources:
+                limits:
+                    memory: 1024M
+    node1:
+        image: fortress/opensearch:latest
+        volumes:
+            - /utmstack/opensearch/data:/usr/share/opensearch/data
+            - /utmstack/opensearch/backups:/usr/share/opensearch/backups
+            - /utmstack/cert:/usr/share/opensearch/config/certificates:ro
+        ports:
+            - 9200:9200
+        environment:
+            - cluster.name=utmstack
+            - node.name=node1
+            - discovery.seed_hosts=node1
+            - cluster.initial_master_nodes=node1
+            - bootstrap.memory_lock=false
+            - DISABLE_SECURITY_PLUGIN=true
+            - DISABLE_INSTALL_DEMO_CONFIG:true
+            - JAVA_HOME:/usr/share/opensearch/jdk
+            - action.auto_create_index:true
+            - compatibility.override_main_response_version:true
+            - 'opensearch_security.disabled: true'
+            - path.repo=/usr/share/opensearch
+            - OPENSEARCH_JAVA_OPTS=-Xms5271m -Xmx5271m
+            - network.host:0.0.0.0
+        logging:
+            driver: json-file
+            options:
+                max-size: 50m
+        deploy:
+            placement:
+                constraints:
+                    - node.role == manager
+            resources:
+                limits:
+                    memory: 10542M
+                reservations:
+                    memory: 5271M
+    postgres:
+        image: fortress/postgres:latest
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            - 5432:5432
+        environment:
+            - POSTGRES_PASSWORD=gw3hUI4jJJEdOub1
+            - PGDATA=/var/lib/postgresql/data/pgdata
+        logging:
+            driver: json-file
+            options:
+                max-size: 50m
+        deploy:
+            placement:
+                constraints:
+                    - node.role == manager
+            resources:
+                limits:
+                    memory: 2048M
+                reservations:
+                    memory: 500M
+        command: [postgres, -c, shared_buffers=256MB, -c, max_connections=1000]
+    user-auditor:
+        image: fortress/user-auditor:v11.2.3
+        environment:
+            - SERVER_NAME=fortress360
+            - INTERNAL_KEY=eFTcoZwIb35ZshIezCWtUMvSs4JEaLBv
+            - DB_USER=postgres
+            - DB_HOST=postgres
+            - DB_PORT=5432
+            - DB_NAME=userauditor
+            - DB_PASS=gw3hUI4jJJEdOub1
+            - ELASTICSEARCH_HOST=node1
+            - ELASTICSEARCH_PORT=9200
+        depends_on:
+            - postgres
+            - node1
+        logging:
+            driver: json-file
+            options:
+                max-size: 50m
+        deploy:
+            placement:
+                constraints:
+                    - node.role == manager
+            resources:
+                limits:
+                    memory: 1024M
+    web-pdf:
+        image: fortress/web-pdf:v11.2.3
+        volumes:
+            - /utmstack/tmpfs:/dev/shm
+        depends_on:
+            - backend
+            - frontend
+        logging:
+            driver: json-file
+            options:
+                max-size: 50m
+        deploy:
+            placement:
+                constraints:
+                    - node.role == manager
+            resources:
+                limits:
+                    memory: 2048M

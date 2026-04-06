@@ -1,0 +1,42 @@
+FROM ghcr.io/utmstack/utmstack/frontend:v11.2.3
+
+USER root
+
+# On remplace index.html
+COPY index_fortress.html /usr/share/nginx/html/index.html
+COPY custom_502.html /usr/share/nginx/html/custom_502.html
+
+# On remplace les images (Note: On garde l'extension originale pour ne pas casser Nginx)
+COPY fortress360.png /usr/share/nginx/html/assets/img/logo_UTMStack.svg
+COPY fortress360.png /usr/share/nginx/html/assets/img/guides/logos/utmstack.png
+COPY fortress360.png /usr/share/nginx/html/favicon.ico
+COPY fortress360.png /usr/share/nginx/html/assets/img/Logo_UTM_Stack_White.svg
+COPY fortress360.png /usr/share/nginx/html/assets/img/logo_full_svg.svg
+COPY fortress360.png /usr/share/nginx/html/assets/img/Logo_UTM_mini.svg
+COPY fortress360.png /usr/share/nginx/html/assets/img/Logo_Only_UTM_Stack_White.svg
+COPY fortress360.png /usr/share/nginx/html/assets/img/icon.svg
+COPY fortress360.png /usr/share/nginx/html/assets/img/favicon.ico
+
+
+RUN CSS_FILE=$(find /usr/share/nginx/html -name "styles*.css" | head -n 1) && \
+    # 1. Masquer les Ã©lÃ©ments de version/status
+    echo "app-utm-vault-status, .status-icon, .status-health, .version-info, app-utm-version-info { display: none !important; }" >> $CSS_FILE && \
+   echo ".utm-navbar .nav-item, .utm-navbar .nav-link, .utm-navbar .text-white, .utm-navbar svg { color: #1a2733 !important; fill: #1a2733 !important; }" >> $CSS_FILE && \
+   echo ".svg-icon svg, .svg-icon path, .svg-icon rect { fill: #232F3E !important; }" >> $CSS_FILE && \
+    echo ".navbar-nav .nav-item .text-white, .navbar-nav .nav-item i { color: #232F3E !important; }" >> $CSS_FILE && \
+    # 2. Forcer la taille du logo
+     echo ".utm-navbar .cursor-pointer[routerlink='/dashboard/overview'] { height: 45px !important; width: auto !important; margin-left: 10px; }" >> $CSS_FILE 
+
+
+#RUN chmod -R 755 /usr/share/nginx/html
+
+# On fait le remplacement textuel
+RUN find /usr/share/nginx/html -type f -name "*.js" -exec sed -i 's/UTM Stack/Fortress360/g' {} +
+RUN find /usr/share/nginx/html -type f -name "*.js" -exec sed -i 's/UTMStack/Fortress360/g' {} +
+RUN find /usr/share/nginx/html -type f -name "*.js" -exec sed -i 's/UTMSTACK/Fortress360/g' {} +
+RUN find /usr/share/nginx/html -type f -name "*.js" -exec sed -i 's/utmstack/fortress360/g' {} +
+RUN find /usr/share/nginx/html -type f -name "*.js" -exec sed -i 's/Utmstack/Fortress360/g' {} +
+
+# On s'assure que Nginx reste le propriétaire
+#RUN chown -R nginx:nginx /usr/share/nginx/html
+

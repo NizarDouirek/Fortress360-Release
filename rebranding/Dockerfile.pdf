@@ -1,0 +1,9 @@
+FROM ghcr.io/utmstack/utmstack/web-pdf:v11.2.3
+USER root
+
+RUN find /app -type f -exec sed -i 's/UTMStack/Fortress360/g' {} + 2>/dev/null || true
+RUN find /app -type f -exec sed -i 's/utmstack/fortress360/g' {} + 2>/dev/null || true
+RUN find /app -type f -exec sed -i 's/UTMSTACK/Fortress360/g' {} + 2>/dev/null || true
+
+RUN find /usr /var /etc -type f -exec sed -i 's/UTMStack/Fortress360/g' {} + 2>/dev/null || true
+RUN find /usr /var /etc -type f -exec sed -i 's/UTMSTACK/Fortress360/g' {} + 2>/dev/null || true

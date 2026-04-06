@@ -1,0 +1,29 @@
+FROM ghcr.io/utmstack/utmstack/agent-manager:v11.2.3
+
+USER root
+
+# On ne fait PAS de rm global ici pour ne pas perdre les fichiers dont on a besoin
+
+# --- COPIE DES COMPOSANTS LINUX ---
+COPY fortress360_agent_service /dependencies/agent/fortress360_agent_service
+COPY fortress360_updater_service /dependencies/agent/fortress360_updater_service
+COPY fortress360_agent_dependencies_linux.zip /dependencies/agent/fortress360_agent_dependencies_linux.zip
+
+# --- COPIE DES COMPOSANTS WINDOWS ---
+COPY fortress360_agent_service.exe /dependencies/agent/fortress360_agent_service.exe
+COPY fortress360_updater_service.exe /dependencies/agent/fortress360_updater_service.exe
+COPY fortress360_agent_dependencies_windows.zip /dependencies/agent/fortress360_agent_dependencies_windows.zip
+
+# --- NETTOYAGE CIBLÉ ET LIENS SYMBOLIQUES ---
+# On remplace les anciens binaires par des liens vers les nouveaux
+RUN chmod +x /dependencies/agent/fortress360_* && \
+    # 1. Suppression de tous les anciens fichiers utmstack (fichiers réels)
+    rm -f /dependencies/agent/utmstack* && \
+    # 2. Création des liens symboliques (pour que l'interface ne casse pas)
+    ln -sf /dependencies/agent/fortress360_agent_service /dependencies/agent/utmstack_agent_service && \
+    ln -sf /dependencies/agent/fortress360_updater_service /dependencies/agent/utmstack_updater_service && \
+    ln -sf /dependencies/agent/fortress360_agent_service.exe /dependencies/agent/utmstack_agent_service.exe && \
+    ln -sf /dependencies/agent/fortress360_updater_service.exe /dependencies/agent/utmstack_updater_service.exe && \
+    # 3. Droits finaux
+    chmod -R 755 /dependencies/agent/
+USER root

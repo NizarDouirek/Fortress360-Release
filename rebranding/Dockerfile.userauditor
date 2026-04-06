@@ -1,0 +1,1 @@
+FROM ghcr.io/utmstack/utmstack/user-auditor:v11.2.3
