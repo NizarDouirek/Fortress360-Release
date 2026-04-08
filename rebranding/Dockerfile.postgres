@@ -1,1 +1,3 @@
 FROM ghcr.io/utmstack/utmstack/postgres:latest
+
+COPY ./sql/init-fortress.sql /docker-entrypoint-initdb.d/
